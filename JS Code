@@ -1,0 +1,218 @@
+function bowlingScore(entries) {
+  "use strict";
+  const frames = entries.split(" "); // Dispatching frames into an array
+  const framesArr = frames.slice(0,9); // To work on first part of the score
+  const score = entries.split(" "); // To be used to sum frame's score
+  
+// Test regex to find out type of frame
+  const numRegex = /^\d{2}$/g;
+  const strikeRegex = /X/g;
+  const spareRegex = /^\d{1}\/$/g;
+  const lastFrameRegex1 = /^X\w+$/;
+  const lastFrameRegex2 = /^\d{1}\/{1}\w+$/;
+
+//Test variable for 3 rolls last frame
+  const framesArr9 = frames.slice(9,10);
+  const testLastFrame1 = framesArr9.every(last => last.match(lastFrameRegex1));
+  const testLastFrame2 = framesArr9.every(last => last.match(lastFrameRegex2));
+  
+//Cheking last frame value
+  let lastFrame = "";
+  if (testLastFrame1) {
+    lastFrame = frames.find(last => last.match(lastFrameRegex1));
+  } else if (testLastFrame2) {
+    lastFrame = frames.find(last => last.match(lastFrameRegex2));
+  } else {
+    lastFrame = undefined;
+  }
+  
+// Calculating last frame score
+  let lastframeScore = 0; 
+  let lastframeArr = [];
+  if (lastFrame !== undefined) {
+    lastframeArr = lastFrame.split("");
+    
+    if (lastframeArr[0] !== "X") {
+      lastframeArr[0] = Number(lastframeArr[0]);
+      if (lastframeArr[1] === "/") {
+        lastframeArr[1] = 10 - lastframeArr[0];
+        if (lastframeArr[2] === "X") {
+          lastframeArr[2] = 10;
+        } else {
+          lastframeArr[2] = Number(lastframeArr[2]);
+        }
+      } else if (typeof Number(lastframeArr[1]) === "number") {
+        lastframeArr[1] = Number(lastframeArr[1]);
+      }  
+    } else if (lastframeArr[0] === "X") {
+      lastframeArr[0]= 10;
+      if (lastframeArr[1] !== "X") {
+        lastframeArr[1] = Number(lastframeArr[1]);
+      } else if (lastframeArr[1] === "X") {
+        lastframeArr[1] = 10;
+        if (lastframeArr[2] !== "X") {
+          lastframeArr[2] = Number(lastframeArr[2]);
+        } else if (lastframeArr[2] === "X") {
+          lastframeArr[2] = 10;
+        }
+      }
+    }
+      lastframeScore = lastframeArr.reduce((a, b) => a+b );
+  } 
+  
+// find strike indexes
+    const strikeIndex = [];
+    
+    for (let i = 0; i < framesArr.length; i++) {
+      if ( framesArr[i] === "X") {
+        strikeIndex.push(i);
+      }
+    }
+      
+// find spare indexes
+    const spareArr = framesArr.filter(spare => spare.match(spareRegex));
+    const spareIndex = [];
+
+    for (let i = 0; i < framesArr.length; i++) {
+      for (let j = 0; j < spareArr.length; j++) {
+        if (framesArr[i] === spareArr[j]) {
+          if (spareIndex.find(value => String(value).match(String(i))) === undefined) {
+            spareIndex.push(i);
+          }
+        }
+      }
+    }
+
+// Setting the first roll score  for spare frames
+    const rollSpare = spareArr.map(frame => frame.split("")).map(roll => roll.map(score => Number(score))); 
+    
+// find Num indexes
+    const numArr = framesArr.filter(spare => spare.match(numRegex));
+    const numIndex = [];
+
+    for (let i = 0; i < framesArr.length; i++) {
+      for (let j = 0; j < numArr.length; j++) {
+        if (framesArr[i] === numArr[j]) {
+          if (numIndex.find(value => String(value).match(String(i))) === undefined) {
+            numIndex.push(i);
+          }
+        }
+      }
+    }
+    
+// Setting Num frame's score
+    const numScore = numArr.map(frame => frame.split("")).map(roll => roll.map(score => Number(score)).reduce((a, b)=> a+b));
+    const rollArr = numArr.map(frame => frame.split("")).map(roll => roll.map(score => Number(score)));
+     for (let i = 0; i < framesArr.length; i++) {
+       for (let j = 0; j < numIndex.length; j++) {
+         if (numIndex[j] === i) {
+           score[i] = numScore[j];
+           framesArr[i] = rollArr[j]
+         }
+       }
+     }
+     
+// Setting spare frame's score
+     for (let i = 0; i < framesArr.length; i++) {
+       for (let j = 0; j < strikeIndex.length; j++) {
+         if (strikeIndex[j] === i){
+           score[i] = 10;
+          }
+        }
+       for (let j = 0; j < spareIndex.length; j++) {
+         if (spareIndex[j] === i && framesArr[spareIndex[j]+1] === "X"){
+          score[i] = 20;
+         } else if (spareIndex[j] === i && typeof score[spareIndex[j]+1] === "number") {
+             for (let k = 0; k < numIndex.length; k++) {
+               if (spareIndex[j]+1 === numIndex[k]) {
+                score[i] = 10 + rollArr[k][0];
+               }
+              }
+            } else if (spareIndex[j] === i && spareIndex[j+1] === spareIndex[j]+1) {
+                score[i] = 10 + rollSpare[j+1][0];
+              }  else if (spareIndex[j] === i && i === 8) {
+                score[i] = 10;
+              } 
+       }
+      }
+
+// Setting strike frame's score 
+  
+  for (let i = 0; i < framesArr.length; i++) {
+    for (let j = 0; j < strikeIndex.length; j++) {
+      if (strikeIndex[j] === i && framesArr[strikeIndex[j]+1] === "X" ) {
+        if (framesArr[strikeIndex[j]+2] === "X") {
+          score[i]= 30;
+        } else {
+              for (let k = 0; k < numIndex.length; k++) {
+                if (strikeIndex[j]+2 === numIndex[k]) {
+                score[i] += 10;
+                score[i] += rollArr[k][0];
+                } 
+              } 
+              for (let k = 0; k < spareArr.length; k++) {
+                if (framesArr[strikeIndex[j]+2] === spareArr[k]) {
+                  score[i] += 10;
+                  score[i] += rollSpare[k][0];
+                }
+              } 
+            }
+      } else {
+        for (let k = 0; k < numIndex.length; k++) {
+                  if (strikeIndex[j] === i && strikeIndex[j]+1 === numIndex[k]) {
+                    score[i]+= score[i+1];
+                  } 
+        }
+        for (let k = 0; k < spareArr.length; k++) {
+                  if (strikeIndex[j] === i && framesArr[strikeIndex[j]+1] === spareArr[k]) {
+                    score[i] = 20;
+                  }
+        }
+      }
+  }
+  }
+// Setting 9th frame score and adjusting last two frames before it
+
+  if (lastFrame !== undefined) {
+    score[9] = lastframeScore;
+    for (let i = 0; i < spareArr.length; i++) {
+      if (framesArr[8] === spareArr[i]) {
+        score[8] = 10 + lastframeArr[0];
+      } 
+    }
+    if (framesArr[8] === "X") {
+      score[8] = 10 + lastframeArr[0] + lastframeArr[1];
+      if (framesArr[7] === "X") {
+        score[7] = 20 + lastframeArr[0];
+      }
+    }
+  } else if (lastFrame === undefined) {
+    const testSpare = framesArr9.every(value => value.match(spareRegex));
+    const testNum = framesArr9.every(value => value.match(numRegex));
+    if (testSpare) {
+      score[9] = 10;
+      const rollLastSpare = framesArr9.map(frame => frame.split("")).map(roll => roll.map(score => Number(score)));
+      for (let i = 0; i < spareArr.length; i++) {
+        if (framesArr[8] === spareArr[i]) {
+          score[8] = 10 + rollLastSpare[0][0];
+        } 
+      }
+    } else if (testNum) {
+      const rollLastNum = framesArr9.map(frame => frame.split("")).map(roll => roll.map(score => Number(score)));
+      score[9] = rollLastNum[0][0] + rollLastNum[0][1];
+      for (let i = 0; i < spareArr.length; i++) {
+        if (framesArr[8] === spareArr[i]) {
+          score[8] = 10 + rollLastNum[0][0];
+        } 
+      }
+      if (framesArr[8] === "X") {
+        score[8] +=score[9];
+        if (framesArr[7] === "X") {
+          score[7] = 20 + rollLastNum[0][0];
+        }
+      }
+    }
+  }
+  
+return score.reduce((a, b) => a+b);
+}
